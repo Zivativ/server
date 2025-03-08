@@ -6,16 +6,12 @@
 
 
 
-#include "exfiles/netlib.h"
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
-#include <Windows.h>
-#include <stdbool.h>
+#include "superheader.h"
 
 typedef struct _Connection {
     bool active;
     tcp_socket socket;
+    char username[64];
 } Connection;
 typedef struct _ConnectionList{
     Connection* con;
