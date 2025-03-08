@@ -6,21 +6,43 @@
 
 ip_address ip;
 tcp_socket server;
-char list[UINT16_MAX];
+char list[UINT16_MAX] = ";";
+
+DWORD WINAPI SendMessages(LPVOID lpThreadParameter){
+    // tcp_socket client = (tcp_socket)lpThreadParameter;
+    // while(1){
+    //     netlib_tcp_send(client, list, strlen(list));
+
+    //     Sleep(1000);
+    // }
+    return 0;
+}
 
 DWORD WINAPI Handlee(LPVOID lpThreadParameter){
     tcp_socket client = (tcp_socket)lpThreadParameter;
     printf("Connected\n");
-    while(1){
+    CreateThread(NULL, 0, SendMessages, client, 0, 0);
+    netlib_tcp_send(client, list, strlen(list));
+    int i = 0;
+    char username[512] = "User";
+    while(1){ 
         char buffer[UINT16_MAX];
         int received = netlib_tcp_recv(client, buffer, UINT16_MAX);
         if(received > 0){
             buffer[received] = '\0';
+            if(i == 0){
+                sprintf(username, "%s", buffer);
+                sprintf(list, "%sWelcome %s!", list, username);
+                printf("Welcome %s!\n", username);
+                i++;
+                continue;
+            }
             //printf("%s\n", buffer);
-            sprintf(list, "%s;User - %s;", list, buffer);
+            sprintf(list, "%s;%s - %s", list, username, buffer);
             printf("%s\n", list);
             netlib_tcp_send(client, list, strlen(list));
         } else return 0;
+
     }
 }
 
