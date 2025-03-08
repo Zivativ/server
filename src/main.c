@@ -1,5 +1,5 @@
 #include "exfiles/netlib.h"
-#include "socket.h"
+#include "conn.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -8,7 +8,7 @@
 //#include "exfiles/cthreads/cthreads.h"
 ip_address ip;
 tcp_socket server;
-SocketList list;
+ConnectionList list;
 
 
 typedef struct _Data {
@@ -20,12 +20,16 @@ typedef struct _Data {
 Data data;
 
 DWORD WINAPI HandleClient(void* content){
-    tcp_socket client = (tcp_socket)content;
+    Connection* con = (Connection*)content;
+    tcp_socket client = con->socket;
     netlib_tcp_accept(client);
     printf("connected!\n");
     while(1){
         int rec = netlib_tcp_recv(client, &data, sizeof(Data));
-        if(rec <= 0) break;
+        if(rec <= 0){
+            printf("One Client Disconnected!\n");
+            break;
+        } 
         //printf("Data Received!\n VERSION = %d - DATA = %s - SUCCESS = %d\n", data.version, data.data, data.success);
         if(data.version != 0){
             Data data = {0, "INCORRECT VERSION", false};
@@ -34,15 +38,19 @@ DWORD WINAPI HandleClient(void* content){
         }
         netlib_tcp_send(client, &data, sizeof(data));
         for(int i = 0; i < list.size; i++){
-            netlib_tcp_send(list.socket[i], &data, sizeof(data));
+            // if(memcmp(&list.con[i], con, sizeof(Connection)) != 0){
+            // }
+            netlib_tcp_send(list.con[i].socket, &data, sizeof(data));
+
         }
     }
+    con->active = false;
     netlib_tcp_close(client);
     return 0;
 }
 
 int main(){
-    SetupSocketList(&list, 10);
+    SetupConnectionsList(&list, 1);
     
     if(netlib_init() < 0){
         printf("netlib_init failed: %s\n", netlib_get_error());
@@ -62,8 +70,9 @@ int main(){
     while(1){
         tcp_socket client = netlib_tcp_accept(server);
         if(client){
-            InsertSocket(&list, client);
-            CreateThread(NULL, 0, HandleClient, (void*)list.socket[list.size - 1], 0, 0); 
+            Connection con = {true, client};
+            AddConnection(&list, con);
+            CreateThread(NULL, 0, HandleClient, (void*)&list.con[list.size - 1], 0, 0); 
         } 
 
     }
