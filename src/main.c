@@ -1,52 +1,49 @@
-#include "exheaders/netlib.h"
+#include "exfiles/netlib.h"
+#include "socket.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <Windows.h>
-
+#include <stdbool.h>
+//#include "exfiles/cthreads/cthreads.h"
 ip_address ip;
 tcp_socket server;
-char list[UINT16_MAX] = ";";
+SocketList list;
 
-DWORD WINAPI SendMessages(LPVOID lpThreadParameter){
-    // tcp_socket client = (tcp_socket)lpThreadParameter;
-    // while(1){
-    //     netlib_tcp_send(client, list, strlen(list));
 
-    //     Sleep(1000);
-    // }
+typedef struct _Data {
+    int version;
+    char data[512];
+    bool success;
+} Data;
+
+Data data;
+
+DWORD WINAPI HandleClient(void* content){
+    tcp_socket client = (tcp_socket)content;
+    netlib_tcp_accept(client);
+    printf("connected!\n");
+    while(1){
+        int rec = netlib_tcp_recv(client, &data, sizeof(Data));
+        if(rec <= 0) break;
+        //printf("Data Received!\n VERSION = %d - DATA = %s - SUCCESS = %d\n", data.version, data.data, data.success);
+        if(data.version != 0){
+            Data data = {0, "INCORRECT VERSION", false};
+            netlib_tcp_send(client, &data, sizeof(data));
+            break;
+        }
+        netlib_tcp_send(client, &data, sizeof(data));
+        for(int i = 0; i < list.size; i++){
+            netlib_tcp_send(list.socket[i], &data, sizeof(data));
+        }
+    }
+    netlib_tcp_close(client);
     return 0;
 }
 
-DWORD WINAPI Handlee(LPVOID lpThreadParameter){
-    tcp_socket client = (tcp_socket)lpThreadParameter;
-    printf("Connected\n");
-    CreateThread(NULL, 0, SendMessages, client, 0, 0);
-    netlib_tcp_send(client, list, strlen(list));
-    int i = 0;
-    char username[512] = "User";
-    while(1){ 
-        char buffer[UINT16_MAX];
-        int received = netlib_tcp_recv(client, buffer, UINT16_MAX);
-        if(received > 0){
-            buffer[received] = '\0';
-            if(i == 0){
-                sprintf(username, "%s", buffer);
-                sprintf(list, "%sWelcome %s!", list, username);
-                printf("Welcome %s!\n", username);
-                i++;
-                continue;
-            }
-            //printf("%s\n", buffer);
-            sprintf(list, "%s;%s - %s", list, username, buffer);
-            printf("%s\n", list);
-            netlib_tcp_send(client, list, strlen(list));
-        } else return 0;
-
-    }
-}
-
 int main(){
+    SetupSocketList(&list, 10);
+    
     if(netlib_init() < 0){
         printf("netlib_init failed: %s\n", netlib_get_error());
         return -1;
@@ -61,10 +58,12 @@ int main(){
         return -1;
     }
     printf("Server Started\n");
+    Data data;
     while(1){
         tcp_socket client = netlib_tcp_accept(server);
         if(client){
-            CreateThread(NULL, 0, Handlee, client, 0, 0);
+            InsertSocket(&list, client);
+            CreateThread(NULL, 0, HandleClient, (void*)list.socket[list.size - 1], 0, 0); 
         } 
 
     }
