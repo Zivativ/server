@@ -1,33 +1,80 @@
 #include "client.h"
 #include "conn.h"
+#include "exfiles/netlib.h"
 
-Data data;
+
 extern ConnectionList list;
 
-// this is ran in a new thread everytime, be aware
+static inline void BroadcastMessageAmongAllClients(Connection* con, Data* data){
+    Data send = {0, true, 0, ""};
+    sprintf_s(send.data, 512,"%s - %s", con->username, data->data);
+    for(int i = 0; i < list.size; i++){
+        netlib_tcp_send(list.con[i].socket, &send, sizeof(send));
+    }
+}
+
+static inline void BroadcastServerMessage(Connection* con, char* message){
+    Data send = {0, true, 0, ""};
+    sprintf_s(send.data, 512, "Server - %s", message);
+    for(int i = 0; i < list.size; i++){
+        netlib_tcp_send(list.con[i].socket, &send, sizeof(send));
+    }
+}
+
+static inline void Idle(Connection* con){
+    Data send = {0, true, 0, ""};
+    for(int i = 0; i < list.size; i++){
+        netlib_tcp_send(list.con[i].socket, &send, sizeof(send));
+    }
+}
+
+static inline void ChangeUsername(Connection* con, Data* data){
+    for(int i = 0; i < list.size; i++){
+        if(strcmp(data->data, list.con[i].username) == 0){
+            Data send = {0, false, 2, ""};
+            netlib_tcp_send(con->socket, &send, sizeof(send));
+            return;
+        }
+    }
+    Data sender;
+    strcpy_s(con->username, 64, data->data);
+    char buffer[512];
+    sprintf_s(buffer, 512, "%s changed their username", con->username);
+    BroadcastServerMessage(con, buffer);
+}
+
 DWORD WINAPI HandleClient(void* content){
+    Data reciever;
     Connection* con = (Connection*)content;
     tcp_socket client = con->socket;
     netlib_tcp_accept(client);
-    printf("connected!\n");
+    info("A Client Connected!\n");
     while(1){
-        int rec = netlib_tcp_recv(client, &data, sizeof(Data));
+        CONTINUE:
+        int rec = netlib_tcp_recv(client, &reciever, sizeof(Data));
         if(rec <= 0){
-            printf("One Client Disconnected!\n");
+            info("A Client Disconnected!\n");
             break;
         } 
-        //printf("Data Received!\n VERSION = %d - DATA = %s - SUCCESS = %d\n", data.version, data.data, data.success);
-        if(data.version != 0){
-            Data data = {0, "INCORRECT VERSION", false};
+        if(reciever.version != 0){
+            Data data = {0, false, 2, "Incorrect Version"};
             netlib_tcp_send(client, &data, sizeof(data));
             break;
         }
-        Data send = {0, "h", true};
-        sprintf(send.data, "%s - %s", con->username, data.data);
-        netlib_tcp_send(client, &send, sizeof(data));
-        for(int i = 0; i < list.size; i++){
-            netlib_tcp_send(list.con[i].socket, &send, sizeof(send));
+        switch(reciever.type){
+            case 1:
+                BroadcastMessageAmongAllClients(con, &reciever);
+                goto CONTINUE;
+            case 3:
+                ChangeUsername(con, &reciever);
+                goto CONTINUE;
+            default:
+                Data senderror = {0, false, 2, "Unknown Packet"};
+                netlib_tcp_send(client, &senderror, sizeof(senderror));
+                info("Unknown Packet, Continuing.....\n");
+                goto CONTINUE;
         }
+        Idle(con);
     }
     con->active = false;
     netlib_tcp_close(client);

@@ -15,19 +15,19 @@ int main(){
     SetupConnectionsList(&list, 1);
     
     if(netlib_init() < 0){
-        printf("netlib_init failed: %s\n", netlib_get_error());
+        fail("netlib_init failed: %s\n", netlib_get_error());
         return -1;
     }
     if(netlib_resolve_host(&ip, NULL, 6942) < 0){
-        printf("netlib_resolve_host failed: %s\n", netlib_get_error());
+        fail("netlib_resolve_host failed: %s\n", netlib_get_error());
         return -1;
     }
     server = netlib_tcp_open(&ip);
     if(!server){
-        printf("netlib_tcp_open failed: %s\n", netlib_get_error());
+        fail("netlib_tcp_open failed: %s\n", netlib_get_error());
         return -1;
     }
-    printf("Server Started\n");
+    info("Server Started\n");
     Data data;
     while(1){
         tcp_socket client = netlib_tcp_accept(server);

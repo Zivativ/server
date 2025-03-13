@@ -12,13 +12,13 @@ void SetupConnectionsList(ConnectionList* list, int size){
 
 void AddConnection(ConnectionList* list, Connection connection){
     if(list->size == list->capacity){
-        printf("Resizing..\n");
+        info("Resizing..\n");
         list->capacity *= 2;
         list->con = (Connection*)realloc(list->con, list->capacity * sizeof(Connection));
     }
     for(int i = 0; i < list->size; i++){
         if(list->con[i].active == false){
-            printf("Connection %d Reused\n", i);
+            info("Connection %d Reused\n", i);
             list->con[i] = connection;
             return;
         }

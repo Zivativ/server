@@ -13,6 +13,7 @@ typedef struct _Connection {
     tcp_socket socket;
     char username[64];
 } Connection;
+
 typedef struct _ConnectionList{
     Connection* con;
     int size;

@@ -17,11 +17,14 @@
 
 typedef struct _Data {
     int version;
-    char data[512];
     bool success;
+    int type;
+    char data[512];
 } Data;
 
-
+#define fail(message, ...) printf("[-] " message, ##__VA_ARGS__)
+#define pass(message, ...) printf("[+] " message, ##__VA_ARGS__)
+#define info(message, ...) printf("[!] " message, ##__VA_ARGS__)
 
 
 
