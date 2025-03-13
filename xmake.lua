@@ -15,5 +15,5 @@ target("server")
         add_links("netlib") 
     else
         add_linkdirs("lib/linux") 
-        add_links("libnetlib.so") 
+        add_links("libnetlib.a") 
     end

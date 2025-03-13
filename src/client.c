@@ -7,7 +7,7 @@ extern ConnectionList list;
 
 static inline void BroadcastMessageAmongAllClients(Connection* con, Data* data){
     Data send = {0, true, 0, ""};
-    sprintf_s(send.data, 512,"%s - %s", con->username, data->data);
+    sprintf(send.data,"%s - %s", con->username, data->data);
     for(int i = 0; i < list.size; i++){
         netlib_tcp_send(list.con[i].socket, &send, sizeof(send));
     }
@@ -15,7 +15,7 @@ static inline void BroadcastMessageAmongAllClients(Connection* con, Data* data){
 
 static inline void BroadcastServerMessage(Connection* con, char* message){
     Data send = {0, true, 0, ""};
-    sprintf_s(send.data, 512, "Server - %s", message);
+    sprintf(send.data, "Server - %s", message);
     for(int i = 0; i < list.size; i++){
         netlib_tcp_send(list.con[i].socket, &send, sizeof(send));
     }
@@ -37,9 +37,9 @@ static inline void ChangeUsername(Connection* con, Data* data){
         }
     }
     Data sender;
-    sprintf_s(con->username, 64, "%.64s", data->data);
+    sprintf(con->username, "%.64s", data->data);
     char buffer[512];
-    sprintf_s(buffer, 512, "%s changed their username", con->username);
+    sprintf(buffer, "%s changed their username", con->username);
     BroadcastServerMessage(con, buffer);
 }
 

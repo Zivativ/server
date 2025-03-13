@@ -36,7 +36,7 @@ int main(){
         if(client){
             char username[64] = "user";
             Connection con = {true, client, ""};
-            strcpy_s(con.username, 64, username);
+            strcpy(con.username, username);
             AddConnection(&list, con);
             if(thrd_create(&thread, HandleClient, (void*)&list.con[list.size - 1]) != thrd_success){
                 fail("Failed Creating Thread.....\n");
