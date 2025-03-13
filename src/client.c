@@ -37,13 +37,13 @@ static inline void ChangeUsername(Connection* con, Data* data){
         }
     }
     Data sender;
-    strcpy_s(con->username, 64, data->data);
+    sprintf_s(con->username, 64, "%.64s", data->data);
     char buffer[512];
     sprintf_s(buffer, 512, "%s changed their username", con->username);
     BroadcastServerMessage(con, buffer);
 }
 
-DWORD WINAPI HandleClient(void* content){
+int HandleClient(void* content){
     Data reciever;
     Connection* con = (Connection*)content;
     tcp_socket client = con->socket;
@@ -51,6 +51,7 @@ DWORD WINAPI HandleClient(void* content){
     info("A Client Connected!\n");
     while(1){
         CONTINUE:
+        con = (Connection*)content;
         int rec = netlib_tcp_recv(client, &reciever, sizeof(Data));
         if(rec <= 0){
             info("A Client Disconnected!\n");
@@ -60,6 +61,11 @@ DWORD WINAPI HandleClient(void* content){
             Data data = {0, false, 2, "Incorrect Version"};
             netlib_tcp_send(client, &data, sizeof(data));
             break;
+        }
+        info("%s POSTED %s", con->username, reciever.data);
+        for(int i = 0; i < list.size; i++){
+            //netlib_tcp_send(list.con[i].socket, &send, sizeof(send));
+            printf("%s -\n", list.con[i].username);
         }
         switch(reciever.type){
             case 1:

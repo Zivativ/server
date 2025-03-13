@@ -10,7 +10,7 @@
 
 
 
-DWORD WINAPI HandleClient(void* content);
+int HandleClient(void* content);
 
 
 

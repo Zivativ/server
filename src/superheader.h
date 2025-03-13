@@ -9,9 +9,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <Windows.h>
+#include <stdlib.h>
 #include <stdbool.h>
-
+#include "exfiles/tinycthread/tinycthread.h"
 
 
 

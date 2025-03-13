@@ -1,5 +1,6 @@
 #include "conn.h"
 #include "client.h"
+#include "exfiles/tinycthread/tinycthread.h"
 
 
 
@@ -31,12 +32,17 @@ int main(){
     Data data;
     while(1){
         tcp_socket client = netlib_tcp_accept(server);
+        thrd_t thread;
         if(client){
             char username[64] = "user";
             Connection con = {true, client, ""};
             strcpy_s(con.username, 64, username);
             AddConnection(&list, con);
-            CreateThread(NULL, 0, HandleClient, (void*)&list.con[list.size - 1], 0, 0); 
+            if(thrd_create(&thread, HandleClient, (void*)&list.con[list.size - 1]) != thrd_success){
+                fail("Failed Creating Thread.....\n");
+                con.active = false;
+            }
+            //CreateThread(NULL, 0, HandleClient, (void*)&list.con[list.size - 1], 0, 0); 
         } 
 
     }
